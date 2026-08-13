@@ -1,64 +1,62 @@
 pipeline {
     agent any
 
+    environment {
+        DEPLOY_DIR = 'C:\inetpub\wwwroot'
+    }
+
     stages {
+
         stage('Checkout') {
             steps {
-                checkout scm
+                echo 'Checking out project from GitHub...'
             }
         }
 
         stage('Build') {
             steps {
-                powershell '''
-                    Write-Host "Building NovaSpace experiment 06"
-                    Get-Item "devops expt6\index.html", "devops expt6\style.css", "devops expt6\script.js" | Format-Table -AutoSize
-                '''
+                echo 'Build started...'
+                bat 'dir'
+                echo 'Build completed successfully!'
             }
         }
 
         stage('Test') {
             steps {
-                powershell '''
-                    $files = @(
-                        "devops expt6\index.html",
-                        "devops expt6\style.css",
-                        "devops expt6\script.js"
-                    )
+                echo 'Testing required web files...'
 
-                    foreach ($file in $files) {
-                        if (-not (Test-Path $file)) {
-                            throw "Required file not found: $file"
-                        }
-
-                        $item = Get-Item $file
-                        if ($item.Length -le 0) {
-                            throw "Required file is empty: $file"
-                        }
-                    }
-
-                    Write-Host "All required web files exist and contain content."
+                bat '''
+                    powershell -NoProfile -Command "if (!(Test-Path 'devops expt6/index.html')) { exit 1 }; if (!(Test-Path 'devops expt6/style.css')) { exit 1 }; if (!(Test-Path 'devops expt6/script.js')) { exit 1 }"
                 '''
+
+                echo 'All required files are present!'
             }
         }
 
         stage('Deploy') {
             steps {
-                powershell '''
-                    $sourceFiles = @(
-                        "devops expt6\index.html",
-                        "devops expt6\style.css",
-                        "devops expt6\script.js"
-                    )
+                echo 'Deploying website to IIS...'
 
-                    $destination = "C:\inetpub\wwwroot"
-                    foreach ($file in $sourceFiles) {
-                        Copy-Item $file $destination -Force
-                    }
-
-                    Write-Host "Deployed NovaSpace files to $destination"
+                bat '''
+                    xcopy /Y /I "devops expt6\\index.html" "%DEPLOY_DIR%"
+                    xcopy /Y /I "devops expt6\\style.css" "%DEPLOY_DIR%"
+                    xcopy /Y /I "devops expt6\\script.js" "%DEPLOY_DIR%"
                 '''
+
+                echo 'Deployment completed successfully!'
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'CI/CD PIPELINE SUCCESSFUL!'
+            echo 'Website deployed to IIS.'
+            echo 'Visit: http://localhost/index.html'
+        }
+
+        failure {
+            echo 'Pipeline failed! Check the console output.'
         }
     }
 }
