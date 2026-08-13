@@ -12,18 +12,33 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Build started...'
-                bat 'dir'
+                bat 'dir "devops expt6"'
                 echo 'Build completed successfully!'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Testing required web files...'
+                echo 'Testing web application files...'
 
-                bat 'powershell -NoProfile -Command "if (!(Test-Path ''devops expt6/index.html'')) { exit 1 }; if (!(Test-Path ''devops expt6/style.css'')) { exit 1 }; if (!(Test-Path ''devops expt6/script.js'')) { exit 1 }"'
+                bat '''
+                if not exist "devops expt6\\index.html" (
+                    echo ERROR: index.html not found
+                    exit /b 1
+                )
 
-                echo 'All required files are present!'
+                if not exist "devops expt6\\style.css" (
+                    echo ERROR: style.css not found
+                    exit /b 1
+                )
+
+                if not exist "devops expt6\\script.js" (
+                    echo ERROR: script.js not found
+                    exit /b 1
+                )
+
+                echo All required files found successfully.
+                '''
             }
         }
 
@@ -31,9 +46,11 @@ pipeline {
             steps {
                 echo 'Deploying website to IIS...'
 
-                bat 'xcopy /Y /I "devops expt6/index.html" "C:/inetpub/wwwroot"'
-                bat 'xcopy /Y /I "devops expt6/style.css" "C:/inetpub/wwwroot"'
-                bat 'xcopy /Y /I "devops expt6/script.js" "C:/inetpub/wwwroot"'
+                bat '''
+                xcopy /Y /I "devops expt6\\index.html" "C:\\inetpub\\wwwroot\\"
+                xcopy /Y /I "devops expt6\\style.css" "C:\\inetpub\\wwwroot\\"
+                xcopy /Y /I "devops expt6\\script.js" "C:\\inetpub\\wwwroot\\"
+                '''
 
                 echo 'Deployment completed successfully!'
             }
@@ -42,13 +59,15 @@ pipeline {
 
     post {
         success {
+            echo '======================================'
             echo 'CI/CD PIPELINE SUCCESSFUL!'
             echo 'Website deployed to IIS.'
-            echo 'Visit: http://localhost/index.html'
+            echo 'URL: http://localhost/index.html'
+            echo '======================================'
         }
 
         failure {
-            echo 'Pipeline failed! Check the console output.'
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
